@@ -1,0 +1,356 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id String @id @default(uuid())
+
+  name String
+
+  billingEmail String
+
+  plan String // 'starter' | 'pro' | 'enterprise' 
+
+  createdAt DateTime @default(now())
+
+  invoices ExtractedInvoice[]
+
+  vendors VendorWhitelist[]
+
+  config TenantConfig?
+
+  checkpoints Checkpoint[]
+
+  users User[]
+
+  jobs IngestionJob[]
+
+  reminders Reminder[]
+
+  mailbox MailboxConnection?
+}
+
+model User {
+  id String @id @default(uuid())
+
+  orgId String
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  email String @unique
+
+  name String
+
+  role String @default("admin") // 'admin' | 'reviewer' | 'viewer'
+
+  passwordHash String // scrypt — salt:hash, both hex
+
+  createdAt DateTime @default(now())
+}
+
+// One row per document that enters the system (upload, Gmail attachment, API call).
+// The LangGraph thread_id is the job id, so a job is also a resumable agent run.
+model IngestionJob {
+  id String @id @default(uuid())
+
+  orgId String
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  source String // 'UPLOAD' | 'GMAIL' | 'API'
+
+  sourceType String // 'EMAIL_PDF' | 'EMAIL_IMAGE' | 'EMAIL_TEXT' | 'API'
+
+  fileName String?
+
+  filePath String? // local stand-in for the S3 key
+
+  mimeType String?
+
+  contentHash String // SHA-256 of the content — idempotency key
+
+  externalId String? // Gmail message id + attachment id
+
+  emailFrom String?
+
+  emailSubject String?
+
+  status String @default("QUEUED") // QUEUED | RUNNING | AWAITING_REVIEW | COMPLETE | REJECTED | DUPLICATE | FAILED
+
+  currentNode String?
+
+  retryCount Int @default(0)
+
+  extractedJson Json?
+
+  errors Json?
+
+  invoiceId String? @unique
+
+  invoice ExtractedInvoice? @relation(fields: [invoiceId], references: [id])
+
+  events AgentEvent[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, contentHash])
+  @@index([orgId, status])
+  @@index([orgId, createdAt])
+}
+
+// Structured log of every node transition — feeds the live agent view
+model AgentEvent {
+  id String @id @default(uuid())
+
+  jobId String
+
+  job IngestionJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  orgId String
+
+  node String // PARSE | EXTRACT | VALIDATE | VERIFY | HUMAN_REVIEW | STORE | REJECTED
+
+  phase String // 'START' | 'END'
+
+  outcome String? // PASS | FAIL | RETRY | ESCALATE | ...
+
+  message String?
+
+  durationMs Int?
+
+  data Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([jobId, createdAt])
+  @@index([orgId, createdAt])
+}
+
+model Reminder {
+  id String @id @default(uuid())
+
+  orgId String
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  invoiceId String
+
+  invoice ExtractedInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  offsetDays Int // days relative to due date: -3 = three days before, 7 = a week overdue
+
+  kind String // 'UPCOMING' | 'DUE_TODAY' | 'OVERDUE'
+
+  channel String // 'GMAIL' | 'SMTP' | 'PREVIEW'
+
+  recipients String[]
+
+  subject String
+
+  body String
+
+  status String // 'SENT' | 'DRAFTED' | 'FAILED'
+
+  error String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([invoiceId, offsetDays])
+  @@index([orgId, createdAt])
+}
+
+model ExtractedInvoice {
+  id String @id @default(uuid())
+
+  orgId String // Multi-tenancy FK 
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  // Source 
+
+  s3Key String // Original document location 
+
+  sourceType String // 'EMAIL_PDF' | 'EMAIL_IMAGE' | 'EMAIL_TEXT' | 'API' 
+
+  // Extracted data (monetary values stored as integer cents) 
+
+  vendorName String
+
+  vendorTaxId String?
+
+  vendorEmail String?
+
+  invoiceRef String // Vendor's invoice ID 
+
+  issueDate DateTime
+
+  dueDate DateTime?
+
+  currency String?
+
+  subtotalCents Int
+
+  taxCents Int
+
+  grandTotalCents Int
+
+  lineItemsJson Json // Serialised line items array 
+
+  // Processing metadata 
+
+  status String // 'PROCESSING'|'COMPLETE'|'HUMAN_REVIEW'|'REJECTED'|'FAILED' 
+
+  retryCount Int @default(0)
+
+  errorLog Json?
+
+  rejectionReason String?
+
+  // Payables tracking — drives the reminder agent
+
+  paymentStatus String @default("UNPAID") // 'UNPAID' | 'PAID'
+
+  paidAt DateTime?
+
+  job IngestionJob?
+
+  reminders Reminder[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, invoiceRef]) // Deduplication constraint 
+  @@index([orgId, status])
+}
+
+model VendorWhitelist {
+  id String @id @default(uuid())
+
+  orgId String
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  vendorName String
+
+  taxId String?
+
+  approvedAt DateTime @default(now())
+
+  approvedBy String // Reviewer user ID 
+
+  @@unique([orgId, vendorName]) // One entry per vendor per org 
+  @@index([orgId])
+}
+
+model TenantConfig {
+  id String @id @default(uuid())
+
+  orgId String @unique
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  // Vendor verification behaviour 
+
+  autoVerifyVendors Boolean @default(false) // Skip whitelist check if true 
+
+  requireVendorTaxId Boolean @default(false) // Fail if vendor taxId absent 
+
+  // Review workflow 
+
+  reviewTimeoutHours Int @default(72) // Hours before escalation expires 
+
+  reviewerEmails String[] // Comma-sep reviewer email list 
+
+  reviewWebhookUrl String? // Optional webhook for HITL notify 
+
+  // Processing 
+
+  maxRetries Int @default(2) // Override LLM retry limit 
+
+  defaultCurrency String? // Fallback currency if absent 
+
+  supportedCurrencies String[] // Allowlist for this tenant 
+
+  // Compliance 
+
+  retentionDays Int @default(2555) // ~7 years default retention 
+
+  requireDueDate Boolean @default(false)
+
+  // Reminders
+
+  remindersEnabled Boolean @default(true)
+
+  reminderRecipients String[] // who gets "invoice due" reminders; empty → Organization.billingEmail
+
+  reminderOffsetsDays Int[] @default([-3, 0, 7]) // relative to due date
+}
+
+model Checkpoint {
+  id String @id @default(uuid())
+
+  jobId String @unique // = LangGraph thread_id; graph state itself lives in the PostgresSaver tables
+
+  orgId String
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  snapshot Json? // extracted data + errors at the moment of interruption, for the review UI 
+
+  nodeAt String // Node where graph was interrupted 
+
+  reason String // 'UNKNOWN_VENDOR' | 'VALIDATION_EXHAUSTED' | 'POLICY'
+
+  expiresAt DateTime // Review window deadline 
+
+  resolvedAt DateTime?
+
+  decision String? // APPROVE | REJECT | APPROVE_AND_WHITELIST
+
+  decidedBy String?
+
+  createdAt DateTime @default(now())
+}
+
+model MailboxConnection { 
+  id String @id @default(cuid()) 
+
+  orgId String @unique 
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  provider String // "gmail" | "outlook" 
+
+  emailAddress String 
+
+  refreshTokenEnc String // encrypted refresh token — never store plaintext 
+
+  historyId String? // Gmail: last processed history cursor 
+
+  deltaLink String? // Outlook: Graph delta query cursor 
+
+  watchExpiresAt DateTime? // when the push subscription needs renewing 
+
+ status String @default("ACTIVE") // ACTIVE | NEEDS_REAUTH | DISCONNECTED 
+
+  lastSyncedAt DateTime?
+
+  canSend Boolean @default(false) // granted gmail.send scope
+
+  createdAt DateTime @default(now()) 
+
+  updatedAt DateTime @updatedAt 
+  }

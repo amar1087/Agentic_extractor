@@ -1,0 +1,22 @@
+# Acme — invoice in an email body
+# No attachment — the invoice is the email text itself. Approved vendor, due today.
+From: Acme Corporation <billing@acme.com>
+Subject: Invoice ACM-2026-0187 — October services
+
+Hi there,
+
+Please find our invoice for October below.
+
+Invoice number: ACM-2026-0187
+Invoice date: {{DATE:-30}}
+Due date: {{DATE:+0}}
+
+- Web development services: 12 hours at $110.00/hr = $1,320.00
+- Hosting (monthly): 1 x $200.00 = $200.00
+
+Subtotal: $1,520.00
+Tax (10%): $152.00
+Total: $1,672.00 (USD)
+
+Thanks for your business,
+Acme Corporation · Tax ID 12-3456789 · 123 Business Street, New York, NY 10001

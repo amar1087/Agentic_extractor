@@ -1,0 +1,18 @@
+# Initech — unknown vendor (GBP)
+# Totals are fine but Initech is not on the whitelist → the graph pauses for a human (approve, whitelist, or reject).
+INITECH SOFTWARE LTD
+4 Riverside Quay, London SE1 9PG, United Kingdom
+VAT Reg: GB 284 1193 07
+Email: invoices@initech.co.uk
+
+TAX INVOICE #INI-55120
+Date of issue: {{DATE:-3}}
+Due date: {{DATE:+27}}
+
+Item                                 Qty   Rate        Line total
+TPS Reporter — annual licence seats   5    £240.00     £1,200.00
+Remote onboarding workshop            1    £350.00       £350.00
+
+Net total      £1,550.00
+VAT @ 20%        £310.00
+Total (GBP)    £1,860.00

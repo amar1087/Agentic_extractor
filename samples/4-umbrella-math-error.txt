@@ -1,0 +1,17 @@
+# Umbrella Office Supplies — arithmetic error
+# The vendor's subtotal is wrong ($1,240.96 printed vs $1,204.96 actual). Validation fails, the extractor retries with feedback, then escalates.
+UMBRELLA OFFICE SUPPLIES
+Unit 7, 300 Raccoon Ave, Denver, CO 80202
+Tax ID 84-2219034 · ar@umbrella-supplies.com
+
+INVOICE: UOS-7781
+Date: {{DATE:-6}}
+Due: {{DATE:+24}}
+
+Copy paper, 10-ream case     qty 10   @ 42.50   = 425.00
+Toner cartridge TN-660       qty 4    @ 89.99   = 359.96
+Ergonomic task chair         qty 2    @ 210.00  = 420.00
+
+SUBTOTAL          1,240.96
+TAX (8%)             99.28
+GRAND TOTAL     $1,340.24 USD

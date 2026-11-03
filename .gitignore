@@ -1,0 +1,14 @@
+.env
+node_modules
+dist
+*.js.map
+
+/src/generated/prisma
+
+storage/
+web/dist
+.env.local
+
+.DS_Store
+.pnpm-store/
+*.tsbuildinfo

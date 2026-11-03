@@ -1,0 +1,17 @@
+# Globex Logistics — overdue freight bill
+# Approved vendor, but the due date passed 9 days ago → lands in the ledger as overdue and triggers an escalating reminder.
+GLOBEX LOGISTICS
+88 Terminal Rd, Newark, NJ 07114
+billing@globexlogistics.com
+
+Freight Invoice No: GLX-2026-30418
+Issued: {{DATE:-39}}
+Terms: Net 30 — due {{DATE:-9}}
+
+1. LTL freight, Newark → Chicago (pallets)    3 x $450.00 = $1,350.00
+2. Fuel surcharge                             1 x $121.50 =   $121.50
+3. Liftgate delivery                          2 x  $75.00 =   $150.00
+
+Subtotal: $1,621.50
+Tax: $0.00
+Amount due: $1,621.50 USD

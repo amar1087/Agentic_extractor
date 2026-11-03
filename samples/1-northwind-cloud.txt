@@ -1,0 +1,21 @@
+# Northwind Cloud — clean invoice
+# Approved vendor, totals reconcile → straight through to the ledger. Due in 2 days, so the reminder agent sends a heads-up.
+NORTHWIND CLOUD SERVICES
+1200 Harbor Way, Seattle, WA 98101
+Tax ID: 91-4482017 · accounts@northwind.cloud
+
+INVOICE  NW-88213
+Invoice date: {{DATE:-28}}
+Payment due:  {{DATE:+2}}
+Currency: USD
+
+Description                         Qty      Unit price     Amount
+Cloud compute (vCPU hours)          720      $0.45          $324.00
+Managed Postgres — db.m6.large      1        $189.00        $189.00
+Business support plan               1        $99.00         $99.00
+
+                                     Subtotal              $612.00
+                                     Sales tax (8%)         $48.96
+                                     TOTAL DUE             $660.96
+
+Please pay by ACH to account ending 4471.
